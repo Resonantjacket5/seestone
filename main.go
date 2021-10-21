@@ -21,7 +21,17 @@ type listBookRespBody struct {
 }
 
 func main() {
+
+	var defaultFlags *[]cli.Flag = &[]cli.Flag{
+		&cli.StringFlag{
+			Name:  "api-token",
+			Value: "None",
+			Usage: "the-one-api api token",
+		},
+	}
+
 	var app *cli.App = &cli.App{
+		Flags: *defaultFlags,
 		Name:  "books",
 		Usage: "list books",
 		Action: func(c *cli.Context) error {
@@ -30,7 +40,8 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name: "books",
+				Flags: *defaultFlags,
+				Name:  "books",
 				Action: func(c *cli.Context) error {
 					listBooks()
 					return nil
@@ -74,4 +85,57 @@ func respToString(resp http.Response) string {
 		log.Fatalln(err)
 	}
 	return string(bytes)
+}
+
+type character struct {
+	ID    string `json:"_id"`
+	Name  string `json:"name"`
+	Race  string `json:"race"`
+	Realm string `json:"realm"`
+}
+
+type listCharacterRespBody struct {
+	Docs []character `json:"docs"`
+}
+
+// func (v Vertex) Abs() float64 {
+
+func (l listCharacterRespBody) Documents() []interface{} {
+	// convert from list of struct to generic interfaces
+	interfaces := make([]interface{}, len(l.Docs))
+	for i, v := range l.Docs {
+		interfaces[i] = v
+	}
+	return interfaces
+}
+
+type responseBody interface {
+	Documents() []interface{}
+}
+
+func listCharacters() {
+	var url = "https://the-one-api.dev/v2/characters"
+
+	var respBody listCharacterRespBody
+
+	genericGet(url, respBody)
+}
+
+func genericGet(url string, respBody responseBody) {
+	resp, err := http.Get(url)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer resp.Body.Close()
+
+	// var respBody class
+
+	// if err := json.Unmarshal(resp.Body, &data); err != nill {
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println(respBody.Documents())
 }
