@@ -24,3 +24,17 @@ https://the-one-api.dev/
   $GOPATH\\bin\\seestone
 ```
 
+
+* books
+  * id
+  * id/chapter
+* chapter
+  * id
+* movie
+  * id
+  * id/quote
+* character
+  * id
+  * id/quote
+* quote
+  * id
