@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
@@ -44,6 +45,14 @@ func main() {
 				Name:  "books",
 				Action: func(c *cli.Context) error {
 					listBooks()
+					return nil
+				},
+			},
+			{
+				Flags: *defaultFlags,
+				Name:  "characters",
+				Action: func(c *cli.Context) error {
+					listCharacters(c)
 					return nil
 				},
 			},
@@ -113,29 +122,53 @@ type responseBody interface {
 	Documents() []interface{}
 }
 
-func listCharacters() {
-	var url = "https://the-one-api.dev/v2/characters"
-
+func listCharacters(c *cli.Context) {
+	fmt.Println("attempt to list characters")
+	var url = "https://the-one-api.dev/v2/character"
 	var respBody listCharacterRespBody
+	var response *http.Response = genericGet(c, url, respBody)
 
-	genericGet(url, respBody)
-}
-
-func genericGet(url string, respBody responseBody) {
-	resp, err := http.Get(url)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer resp.Body.Close()
-
-	// var respBody class
-
-	// if err := json.Unmarshal(resp.Body, &data); err != nill {
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
-
+	defer response.Body.Close()
+	err := json.NewDecoder(response.Body).Decode(&respBody)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println(respBody.Documents())
+}
+
+func genericGet(c *cli.Context, url string, respBody responseBody) *http.Response {
+
+	// var header string = "Authorization: Bearer "
+
+	var client *http.Client = &http.Client{
+		Timeout: time.Second * 20,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var apiToken string = c.String("api-token")
+	if apiToken != "None" {
+		var bearerString string = fmt.Sprintf("Bearer %s", apiToken)
+		req.Header.Add("Authorization", bearerString)
+	}
+
+	resp, err := client.Do(req)
+
+	// resp, err := http.Get(url)
+	//replace with validation function
+	fmt.Println(resp.Status)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return resp
+
+	// err = json.NewDecoder(resp.Body).Decode(&respBody)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// fmt.Println(respBody.Documents())
 }
