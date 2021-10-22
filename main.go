@@ -20,12 +20,23 @@ type listBookRespBody struct {
 	Docs []book `json:"docs"`
 }
 
+type movie struct {
+	ID               string `json:"_id"`
+	Name             string `json:"name"`
+	RuntimeInMinutes int    `json:"runtimeInMinutes"`
+	BudgetInMillions int    `json:"budgetInMillions"`
+}
+
+type listMovieRespBody struct {
+	Docs []movie `json:"docs"`
+}
+
 func main() {
 	var app *cli.App = &cli.App{
-		Name:  "books",
-		Usage: "list books",
+		Name:  "seestone",
+		Usage: "The seeing stone",
 		Action: func(c *cli.Context) error {
-			fmt.Println("main")
+			fmt.Println("no subcommand called")
 			return nil
 		},
 		Commands: []*cli.Command{
@@ -33,6 +44,13 @@ func main() {
 				Name: "books",
 				Action: func(c *cli.Context) error {
 					listBooks()
+					return nil
+				},
+			},
+			{
+				Name: "movies",
+				Action: func(c *cli.Context) error {
+					listMovies()
 					return nil
 				},
 			},
@@ -47,7 +65,6 @@ func main() {
 
 func listBooks() {
 	var url = "https://the-one-api.dev/v2/book"
-
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -66,6 +83,31 @@ func listBooks() {
 		log.Fatalln(err)
 	}
 	fmt.Println(respBody.Docs)
+}
+
+func listMovies() {
+
+	var url = "https://the-one-api.dev/v2/movie"
+	resp, err := http.Get(url)
+	validateResp(resp)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer resp.Body.Close()
+
+	var respBody listMovieRespBody
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println(respBody.Docs)
+}
+
+func validateResp(resp *http.Response) {
+	if resp.StatusCode != 200 {
+		log.Fatalln(resp.Status)
+	}
 }
 
 func respToString(resp http.Response) string {
