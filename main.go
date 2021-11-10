@@ -9,17 +9,10 @@ import (
 	"os"
 	"time"
 
+	api "github.com/resonantjacket5/seestone/pkg"
+
 	"github.com/urfave/cli/v2"
 )
-
-type book struct {
-	ID   string `json:"_id"`
-	Name string `json:"name"`
-}
-
-type listBookRespBody struct {
-	Docs []book `json:"docs"`
-}
 
 type movie struct {
 	ID               string `json:"_id"`
@@ -54,7 +47,8 @@ func main() {
 				Flags: *defaultFlags,
 				Name:  "books",
 				Action: func(c *cli.Context) error {
-					listBooks()
+					api.ListBooks()
+					// listBooks()
 					return nil
 				},
 			},
@@ -74,6 +68,14 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Flags: *defaultFlags,
+				Name:  "chapters",
+				Action: func(c *cli.Context) error {
+					listChapters(c)
+					return nil
+				},
+			},
 		},
 	}
 	// (&cli.App{}).Run(os.Args)
@@ -81,28 +83,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-}
-
-func listBooks() {
-	var url = "https://the-one-api.dev/v2/book"
-	resp, err := http.Get(url)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer resp.Body.Close()
-
-	// var data map[string]interface{}
-
-	var respBody listBookRespBody
-
-	// if err := json.Unmarshal(resp.Body, &data); err != nill {
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println(respBody.Docs)
 }
 
 func listMovies() {
@@ -160,15 +140,11 @@ func (l listCharacterRespBody) Documents() []interface{} {
 	return interfaces
 }
 
-type responseBody interface {
-	Documents() []interface{}
-}
-
 func listCharacters(c *cli.Context) {
 	fmt.Println("attempt to list characters")
 	var url = "https://the-one-api.dev/v2/character"
 	var respBody listCharacterRespBody
-	var response *http.Response = genericGet(c, url, respBody)
+	var response *http.Response = genericGet(c, url)
 
 	defer response.Body.Close()
 	err := json.NewDecoder(response.Body).Decode(&respBody)
@@ -178,7 +154,47 @@ func listCharacters(c *cli.Context) {
 	fmt.Println(respBody.Documents())
 }
 
-func genericGet(c *cli.Context, url string, respBody responseBody) *http.Response {
+type chapter struct {
+	ID          string `json:"_id"`
+	ChapterName string `json:"chapterName"`
+	BookID      string `json:"book"`
+}
+
+type listChapterRespBody struct {
+	Docs []chapter `json:"docs"`
+}
+
+func (l listChapterRespBody) Names() []string {
+	var names []string = []string{}
+	for _, v := range l.Docs {
+		names = append(names, v.ChapterName)
+	}
+	return names
+}
+
+func listChapters(c *cli.Context) {
+	var url = "https://the-one-api.dev/v2/chapter"
+	var respBody listChapterRespBody
+	var response *http.Response = genericGet(c, url)
+
+	defer response.Body.Close()
+	err := json.NewDecoder(response.Body).Decode(&respBody)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var names []string = respBody.Names()
+
+	for _, v := range names {
+		fmt.Println(v)
+	}
+}
+
+type responseBody interface {
+	Documents() []interface{}
+}
+
+func genericGet(c *cli.Context, url string) *http.Response {
 
 	// var header string = "Authorization: Bearer "
 
